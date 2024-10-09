@@ -1,0 +1,22 @@
+apiversion: apps/v1
+kind: Deployment
+metadata:
+  namespace: go-socket
+  name: chat-client
+  labels:
+    app: chat-client
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chat-client
+  template:
+    metadata:
+      labels:
+        app: chat-client
+    spec:
+      containers:
+        - name: chat-client
+          image: chat-client:latest
+          ports:
+            - containerPort: 8080

@@ -1,0 +1,13 @@
+apiversion: v1
+kind: Service
+metadata:
+  namespace: go-socket
+  name: chat-client
+spec:
+  selector:
+    app: chat-client
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+  type: clusterip
