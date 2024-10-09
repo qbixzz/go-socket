@@ -1,13 +1,16 @@
 <template>
-    <div class="chat-window">
-      <div class="message-list-container">
-        <MessageList :messages="messages" :clientId="clientId" />
-      </div>
-      <div class="message-input-container">
-        <MessageInput @send-message="sendMessage" />
-      </div>
+  <div class="chat-window">
+    <div class="header">
+      <h1>Go Socket Chat</h1>
     </div>
-  </template>
+    <div class="message-list-container">
+      <MessageList :messages="messages" :clientId="clientId" />
+    </div>
+    <div class="message-input-container">
+      <MessageInput @send-message="sendMessage" />
+    </div>
+  </div>
+</template>
   
   <script>
   import MessageList from './MessageList.vue';
@@ -40,20 +43,26 @@
       }
     },
     mounted() {
-      this.websocket = new WebSocket('ws://go-chat-server:8080/ws');
+      this.websocket = new WebSocket('ws://go-socket.co.th/api/ws');
       this.websocket.onmessage = this.receiveMessage;
     }
   };
   </script>
   
   <style scoped>
+  .header {
+  padding: 10px;
+  background-color: #4CAF50;
+  color: white;
+  text-align: left;
+  }
+
   .chat-window {
     display: flex;
     flex-direction: column;
-    height: 95vh;
+    height: 100vh;
     background-color: #f5f5f5;
     border: 1px solid #ddd;
-    border-radius: 8px;
     overflow: hidden;
   }
   

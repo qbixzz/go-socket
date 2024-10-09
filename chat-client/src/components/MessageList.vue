@@ -33,7 +33,8 @@
   
   .message {
     max-width: 60%;
-    padding: 10px;
+    font-size: 2em;
+    padding: 5px 15px;
     margin: 5px 0;
     border-radius: 10px;
     word-wrap: break-word;

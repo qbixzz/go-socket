@@ -1,6 +1,9 @@
 <template>
     <div class="message-input">
-      <input v-model="message" @keyup.enter="sendMessage" placeholder="Type a message" />
+      <input v-model="message" @keyup.enter="sendMessage" placeholder="Type a message" style="height: 50px;" />
+      <button @click="sendMessage" style="height: 50px;">
+        <i class="fas fa-paper-plane"></i>
+      </button>
     </div>
   </template>
   
@@ -26,9 +29,16 @@
   .message-input {
     padding: 10px;
     border-top: 1px solid #ccc;
+    display: flex;
+    align-items: center;
   }
   input {
-    width: 100%;
+    flex: 1;
+    padding: 10px;
+    box-sizing: border-box;
+    margin-right: 10px;
+  }
+  button {
     padding: 10px;
     box-sizing: border-box;
   }
