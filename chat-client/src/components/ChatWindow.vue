@@ -43,7 +43,7 @@
       }
     },
     mounted() {
-      this.websocket = new WebSocket('ws://go-socket.co.th/api/ws');
+      this.websocket = new WebSocket('ws://events.controldata.co.th/chat-server/ws');
       this.websocket.onmessage = this.receiveMessage;
     }
   };

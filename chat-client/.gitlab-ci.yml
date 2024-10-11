@@ -1,0 +1,90 @@
+# Official docker image.
+image: docker:latest
+
+variables:
+  DOCKER_IMAGE: "$DOCKER_REGISTRY/dx/vc/${CI_PROJECT_NAME,,}"
+
+before_script:
+  - docker login -u $DOCKER_USER -p $DOCKER_PASSWORD $DOCKER_REGISTRY
+  - DOCKER_IMAGE="$DOCKER_REGISTRY/dx/vc/${CI_PROJECT_NAME,,}"
+  - if [ -z "$CI_COMMIT_TAG" ]; then
+      TAG_NAME="dev";
+    else
+      TAG_NAME="$CI_COMMIT_TAG";
+    fi
+  - if [ -z "$CI_BUILD_TAG" ]; then
+      npm version --no-git-tag-version "0.$CI_PIPELINE_ID.0";
+    else
+      npm version --no-git-tag-version "$CI_BUILD_TAG";
+    fi
+
+
+stages:
+  - build
+  # - test
+  - delivery
+  - cleanup
+
+# quality:
+#   stage: test
+#   script:
+#     - sonar-scanner
+#       -Dsonar.qualitygate.wait=true
+#       -Dsonar.sources=src
+#       -Dsonar.exclusions=**/*_test.go,src/cmd/**,src/protobuf/**,src/ptotoc/**,deployment/**
+#       -Dsonar.host.url=$SONAR_HOST
+#       -Dsonar.login=$SONAR_TOKEN
+#       -Dsonar.projectKey=CDT-DX-VC-$CI_PROJECT_NAME
+#       -Dsonar.projectName="CDT / DX / VC / $CI_PROJECT_NAME"
+#       -Dsonar.projectVersion=$CI_PIPELINE_ID
+#       -Dsonar.analysis.mode=publish
+#   tags:
+#     - docker
+#   when: manual
+
+build-dev:
+  stage: build
+  script:
+    - docker build --build-arg NPM_REPOSITORY --build-arg NPM_TOKEN_READONLY --pull -t "$DOCKER_IMAGE:$TAG_NAME" .
+  only:
+    - dev
+  tags:
+    - docker
+
+delivery-dev:
+  stage: delivery
+  script:
+    - docker tag "$DOCKER_IMAGE:$TAG_NAME" "$DOCKER_IMAGE:latest"
+    - docker push "$DOCKER_IMAGE:$TAG_NAME"
+  only:
+    - dev
+  tags:
+    - docker
+
+build:
+  stage: build
+  script:
+    - docker build --build-arg NPM_REPOSITORY --build-arg NPM_TOKEN_READONLY --pull -t "$DOCKER_IMAGE:$TAG_NAME" .
+  only:
+    - tags
+  tags:
+    - docker
+
+delivery:
+  stage: delivery
+  script:
+    - docker tag "$DOCKER_IMAGE:$TAG_NAME" "$DOCKER_IMAGE:latest"
+    - docker push "$DOCKER_IMAGE:$TAG_NAME"
+    - docker push "$DOCKER_IMAGE:latest"
+  only:
+    - tags
+  tags:
+    - docker
+
+cleanup:
+  stage: cleanup
+  script:
+    - docker rmi -f "$DOCKER_IMAGE:$TAG_NAME" "$DOCKER_IMAGE:latest"
+  tags:
+    - docker
+  when: always

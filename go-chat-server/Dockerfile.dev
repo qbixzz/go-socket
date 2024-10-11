@@ -1,0 +1,16 @@
+FROM golang:1.22.5
+
+WORKDIR /app/
+
+ENV GIN_MODE=debug
+
+COPY go.* /app/
+
+RUN ln -sf /usr/share/zoneinfo/Asia/Bangkok /etc/localtime \
+    && echo "Asia/Bangkok" > /etc/timezone \
+    && mkdir -p /data/logs/ \
+    && go mod download
+
+COPY . .
+
+CMD [ "go", "run", "src/cmd/main.go" ]
