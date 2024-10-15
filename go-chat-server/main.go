@@ -5,6 +5,8 @@ import (
     "fmt"
     "log"
     "net/http"
+    "time"
+
     "github.com/gorilla/websocket"
 )
 
@@ -17,6 +19,7 @@ var upgrader = websocket.Upgrader{
 var clients = make(map[*websocket.Conn]bool)
 var rooms = make(map[string]map[*websocket.Conn]bool)
 var broadcast = make(chan Message)
+var sseClients = make(map[chan string]bool)
 
 type Message struct {
     Text      string `json:"text"`
@@ -33,6 +36,36 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
     defer ws.Close()
 
     clients[ws] = true
+
+    ticker := time.NewTicker(2 * time.Second)
+    defer ticker.Stop()
+
+    timer := time.NewTimer(10 * time.Second)
+    defer timer.Stop()
+
+    count := 0
+
+    go func() {
+        for {
+            select {
+            case <-ticker.C:
+                count++
+                msg := Message{Text: fmt.Sprintf("hello %d", count), Event: "server-message"}
+                err := ws.WriteJSON(msg)
+                if err != nil {
+                    log.Printf("error: %v", err)
+                    ws.Close()
+                    delete(clients, ws)
+                    return
+                }
+            case <-timer.C:
+                log.Printf("Disconnecting client after 10 seconds: %v", ws.RemoteAddr())
+                ws.Close()
+                delete(clients, ws)
+                return
+            }
+        }
+    }()
 
     for {
         var msg Message
@@ -94,6 +127,10 @@ func handleBroadcastMessage(msg Message) {
             handleClientError(client, "")
         }
     }
+
+    for sseClient := range sseClients {
+        sseClient <- msg.Text
+    }
 }
 
 func sendMessageToClient(client *websocket.Conn, msg Message) error {
@@ -121,11 +158,42 @@ func handleSendMessage(w http.ResponseWriter, r *http.Request) {
     w.WriteHeader(http.StatusOK)
 }
 
+func handleSSE(w http.ResponseWriter, r *http.Request) {
+    flusher, ok := w.(http.Flusher)
+    if !ok {
+        http.Error(w, "Streaming unsupported!", http.StatusInternalServerError)
+        return
+    }
+
+    w.Header().Set("Content-Type", "text/event-stream")
+    w.Header().Set("Cache-Control", "no-cache")
+    w.Header().Set("Connection", "keep-alive")
+
+    messageChan := make(chan string)
+    sseClients[messageChan] = true
+
+    defer func() {
+        delete(sseClients, messageChan)
+        close(messageChan)
+    }()
+
+    for {
+        select {
+        case msg := <-messageChan:
+            fmt.Fprintf(w, "data: %s\n\n", msg)
+            flusher.Flush()
+        case <-r.Context().Done():
+            return
+        }
+    }
+}
+
 func main() {
     fs := http.FileServer(http.Dir("./public"))
     http.Handle("/", fs)
     http.HandleFunc("/ws", handleConnections)
     http.HandleFunc("/send", handleSendMessage)
+    http.HandleFunc("/events", handleSSE)
 
     go handleMessages()
 
