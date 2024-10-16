@@ -26,6 +26,12 @@ type Message struct {
 }
 
 func handleConnections(w http.ResponseWriter, r *http.Request) {
+    clientId := r.URL.Query().Get("clientId")
+    if clientId == "" {
+        http.Error(w, "Client ID is required", http.StatusBadRequest)
+        return
+    }
+    log.Println("New client connected", clientId)
     ws, err := upgrader.Upgrade(w, r, nil)
     if err != nil {
         log.Fatal(err)
@@ -124,7 +130,14 @@ func handleSendMessage(w http.ResponseWriter, r *http.Request) {
 func main() {
     fs := http.FileServer(http.Dir("./public"))
     http.Handle("/", fs)
-    http.HandleFunc("/ws", handleConnections)
+    http.HandleFunc("/ws/", func(w http.ResponseWriter, r *http.Request) {
+        clientId := r.URL.Query().Get("clientId")
+        if clientId == "" {
+            http.Error(w, "Client ID is required", http.StatusBadRequest)
+            return
+        }
+        handleConnections(w, r)
+    })
     http.HandleFunc("/send", handleSendMessage)
 
     go handleMessages()
