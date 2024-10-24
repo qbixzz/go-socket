@@ -3,7 +3,7 @@
       <div
         v-for="(message, index) in messages"
         :key="index"
-        :class="['message', message.sender === clientId ? 'message-right' : 'message-left']"
+        :class="['message', message.event === 'client-message' ? 'message-right' : 'message-left']"
       >
         {{ message.text }}
       </div>

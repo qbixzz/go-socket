@@ -40,56 +40,43 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
         log.Fatal(err)
     }
     defer ws.Close()
-
     clients[ws] = true
-
-    ticker := time.NewTicker(2 * time.Second)
-    defer ticker.Stop()
-
-    timer := time.NewTimer(10 * time.Second)
-    defer timer.Stop()
-
-    count := 0
-
-    go func() {
-        for {
-            select {
-            case <-ticker.C:
-                count++
-                msg := Message{Text: fmt.Sprintf("hello %d", count), Event: "server-message"}
-                err := ws.WriteJSON(msg)
-                if err != nil {
-                    log.Printf("error: %v", err)
-                    ws.Close()
-                    delete(clients, ws)
-                    return
-                }
-            case <-timer.C:
-                log.Printf("Disconnecting client after 10 seconds: %v", ws.RemoteAddr())
-                ws.Close()
-                delete(clients, ws)
-                return
-            }
-        }
+    defer func() {
+        delete(clients, ws)
+        ws.Close()
     }()
-
     for {
         var msg Message
         err := ws.ReadJSON(&msg)
         if err != nil {
             log.Printf("error: %v", err)
-            delete(clients, ws)
             break
         }
         log.Printf("Received message: %s", msg.Text)
-
+        if msg.Text == "close" {
+            ticker := time.NewTicker(1 * time.Second)
+            defer ticker.Stop()
+            countdown := 5
+            for countdown > 0 {
+                <-ticker.C
+                countdown--
+                countdownMsg := Message{Text: fmt.Sprintf("Closing in %d seconds", countdown), Event: "server-message"}
+                broadcast <- countdownMsg
+                // err := ws.WriteJSON(countdownMsg)
+                // if err != nil {
+                //     log.Printf("error: %v", err)
+                //     break
+                // }
+            }
+            log.Printf("Closing connection to client: %v", clientId)
+            break
+        }
         if msg.Room != "" {
             if rooms[msg.Room] == nil {
                 rooms[msg.Room] = make(map[*websocket.Conn]bool)
             }
             rooms[msg.Room][ws] = true
         }
-
         broadcast <- msg
     }
 }
