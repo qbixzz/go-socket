@@ -1,6 +1,7 @@
 package main
 
 import (
+    "github.com/gin-gonic/gin"
     "encoding/json"
     "fmt"
     "log"
@@ -28,7 +29,9 @@ type Message struct {
     Recipient string `json:"recipient,omitempty"`
 }
 
-func handleConnections(w http.ResponseWriter, r *http.Request) {
+func handleConnections(c *gin.Context) {
+    w := c.Writer
+    r := c.Request
     clientId := r.URL.Query().Get("clientId")
     if clientId == "" {
         http.Error(w, "Client ID is required", http.StatusBadRequest)
@@ -45,6 +48,7 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
         delete(clients, ws)
         ws.Close()
     }()
+
     for {
         var msg Message
         err := ws.ReadJSON(&msg)
@@ -138,7 +142,9 @@ func handleClientError(client *websocket.Conn, room string) {
     }
 }
 
-func handleSendMessage(w http.ResponseWriter, r *http.Request) {
+func handleSendMessage(c *gin.Context) {
+    w := c.Writer
+    r := c.Request
     var msg Message
     err := json.NewDecoder(r.Body).Decode(&msg)
     if err != nil {
@@ -151,7 +157,9 @@ func handleSendMessage(w http.ResponseWriter, r *http.Request) {
     w.WriteHeader(http.StatusOK)
 }
 
-func handleSSE(w http.ResponseWriter, r *http.Request) {
+func handleSSE(c *gin.Context) {
+    w := c.Writer
+    r := c.Request
     flusher, ok := w.(http.Flusher)
     if !ok {
         http.Error(w, "Streaming unsupported!", http.StatusInternalServerError)
@@ -182,24 +190,22 @@ func handleSSE(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-    fs := http.FileServer(http.Dir("./public"))
-    http.Handle("/", fs)
-    http.HandleFunc("/ws/", func(w http.ResponseWriter, r *http.Request) {
+    r := gin.Default()
+
+    r.GET("/ws/", func(c *gin.Context) {
+        w := c.Writer
+        r := c.Request
         clientId := r.URL.Query().Get("clientId")
         if clientId == "" {
             http.Error(w, "Client ID is required", http.StatusBadRequest)
             return
         }
-        handleConnections(w, r)
+        handleConnections(c)
     })
-    http.HandleFunc("/send", handleSendMessage)
-    http.HandleFunc("/events", handleSSE)
+    r.POST("/send", handleSendMessage)
+    r.GET("/sse", handleSSE)
 
     go handleMessages()
 
-    fmt.Println("HTTP server started on :8080")
-    err := http.ListenAndServe(":8080", nil)
-    if err != nil {
-        log.Fatal("ListenAndServe: ", err)
-    }
+    r.Run(":8081")
 }

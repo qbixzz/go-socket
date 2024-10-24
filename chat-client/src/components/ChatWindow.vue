@@ -30,8 +30,8 @@
     },
     methods: {
     connectWebSocket() {
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${protocol}//events.controldata.co.th/chat-server/ws/?clientId=${this.clientId}`;
+      // const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `wss://events.controldata.co.th/chat-server/ws/?clientId=${this.clientId}`;
       this.websocket = new WebSocket(wsUrl);
 
       this.websocket.onopen = () => {
