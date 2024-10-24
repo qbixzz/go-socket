@@ -32,6 +32,12 @@ type Message struct {
 func handleConnections(c *gin.Context) {
     w := c.Writer
     r := c.Request
+    clientId := r.URL.Query().Get("clientId")
+    if clientId == "" {
+        http.Error(w, "Client ID is required", http.StatusBadRequest)
+        return
+    }
+    log.Println("New client connected", clientId)
     ws, err := upgrader.Upgrade(w, r, nil)
     if err != nil {
         log.Fatal(err)
@@ -198,11 +204,20 @@ func handleSSE(c *gin.Context) {
 func main() {
     r := gin.Default()
 
-    r.GET("/ws", handleConnections)
+    r.GET("/ws", func(c *gin.Context) {
+        w := c.Writer
+        r := c.Request
+        clientId := r.URL.Query().Get("clientId")
+        if clientId == "" {
+            http.Error(w, "Client ID is required", http.StatusBadRequest)
+            return
+        }
+        handleConnections(c)
+    })
     r.POST("/send", handleSendMessage)
     r.GET("/sse", handleSSE)
 
     go handleMessages()
 
-    r.Run(":8080")
+    r.Run(":8081")
 }

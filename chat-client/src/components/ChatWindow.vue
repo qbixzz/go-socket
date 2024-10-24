@@ -38,12 +38,12 @@
         const message = JSON.parse(event.data);
         if (message.event === 'server-message' && message.sender !== this.clientId) {
           this.messages.push(message);
-          console.log('Received message:', this.messages);
         }
+        console.log('Received message:', this.messages);
       }
     },
     mounted() {
-      this.websocket = new WebSocket('ws://events.controldata.co.th/chat-server/ws');
+      this.websocket = new WebSocket('ws://localhost:8081/ws/?clientId=' + this.clientId);
       this.websocket.onmessage = this.receiveMessage;
     }
   };

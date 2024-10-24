@@ -1,0 +1,25 @@
+services:
+  chat-client:
+    # build:
+    #   context: ./chat-client
+    #   dockerfile: Dockerfile.dev
+    image: registry.cw.cdg.co.th/dx/vc/chat-client:dev
+    ports:
+      - "8080:8080"
+    # volumes:
+    #   - ./chat-client:/app
+    environment:
+      - VUE_APP_API_URL=http://localhost:8080
+    depends_on:
+      - go-chat-server
+
+  go-chat-server:
+    # build:
+    #   context: ./go-chat-server
+    image: registry.cw.cdg.co.th/dx/vc/chat-server:dev
+    ports:
+      - "8081:8080"
+    # volumes:
+    #   - ./go-chat-server:/app
+    environment:
+      - GO_ENV=development
