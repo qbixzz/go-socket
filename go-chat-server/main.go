@@ -6,7 +6,7 @@ import (
     "fmt"
     "log"
     "net/http"
-    "time"
+    // "time"
 
     "github.com/gorilla/websocket"
 )
@@ -42,39 +42,39 @@ func handleConnections(c *gin.Context) {
     if err != nil {
         log.Fatal(err)
     }
-    defer ws.Close()
+    // defer ws.Close()
 
-    clients[ws] = true
+    // clients[ws] = true
 
-    ticker := time.NewTicker(2 * time.Second)
-    defer ticker.Stop()
+    // ticker := time.NewTicker(2 * time.Second)
+    // defer ticker.Stop()
 
-    timer := time.NewTimer(10 * time.Second)
-    defer timer.Stop()
+    // timer := time.NewTimer(10 * time.Second)
+    // defer timer.Stop()
 
-    count := 0
+    // count := 0
 
-    go func() {
-        for {
-            select {
-            case <-ticker.C:
-                count++
-                msg := Message{Text: fmt.Sprintf("hello %d", count), Event: "server-message"}
-                err := ws.WriteJSON(msg)
-                if err != nil {
-                    log.Printf("error: %v", err)
-                    ws.Close()
-                    delete(clients, ws)
-                    return
-                }
-            case <-timer.C:
-                log.Printf("Disconnecting client after 10 seconds: %v", ws.RemoteAddr())
-                ws.Close()
-                delete(clients, ws)
-                return
-            }
-        }
-    }()
+    // go func() {
+    //     for {
+    //         select {
+    //         case <-ticker.C:
+    //             count++
+    //             msg := Message{Text: fmt.Sprintf("hello %d", count), Event: "server-message"}
+    //             err := ws.WriteJSON(msg)
+    //             if err != nil {
+    //                 log.Printf("error: %v", err)
+    //                 ws.Close()
+    //                 delete(clients, ws)
+    //                 return
+    //             }
+    //         case <-timer.C:
+    //             log.Printf("Disconnecting client after 10 seconds: %v", ws.RemoteAddr())
+    //             ws.Close()
+    //             delete(clients, ws)
+    //             return
+    //         }
+    //     }
+    // }()
 
     for {
         var msg Message
@@ -204,7 +204,7 @@ func handleSSE(c *gin.Context) {
 func main() {
     r := gin.Default()
 
-    r.GET("/ws", func(c *gin.Context) {
+    r.GET("/ws/", func(c *gin.Context) {
         w := c.Writer
         r := c.Request
         clientId := r.URL.Query().Get("clientId")
