@@ -2,6 +2,7 @@
   <div class="chat-window">
     <div class="header">
       <h1>Go Socket Chat</h1>
+      <p class="clock">{{ serverTime }}</p>
     </div>
     <div class="message-list-container">
       <MessageList :messages="messages" :clientId="clientId" />
@@ -26,6 +27,7 @@
         messages: [],
         clientId: 'client-' + Math.random().toString(36).substr(2, 9),
         websocket: null,
+        serverTime: '',
       };
     },
     methods: {
@@ -48,9 +50,31 @@
 
       this.websocket.onmessage = this.receiveMessage;
     },
+    connectSSE() {
+      const eventSource = new EventSource('http://localhost:8081/sse');
+      eventSource.onmessage = (event) => {
+        this.serverTime = event.data;
+      };
+      eventSource.onerror = (error) => {
+        console.error('EventSource failed:', error);
+        eventSource.close();
+      };
+    },
     sendMessage(message) {
       if (message === 'connect') {
         this.connectWebSocket();
+        return;
+      }
+      if (message === 'disconnect') {
+        this.websocket.close();
+        return;
+      }
+      if (message === 'clear') {
+        this.messages = [];
+        return;
+      }
+      if (message === 'connectsse') {
+        this.connectSSE();
         return;
       }
       if (this.websocket.readyState === WebSocket.OPEN) {
@@ -67,10 +91,11 @@
           this.messages.push(message);
           console.log('Received message:', this.messages);
         }
-      }
+    }
   },
   mounted() {
     this.connectWebSocket();
+    this.connectSSE();
   },
   };
   </script>
@@ -81,6 +106,14 @@
   background-color: #4CAF50;
   color: white;
   text-align: left;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  }
+
+  .clock {
+  font-size: 1em;
+  color: #333;
   }
 
   .chat-window {

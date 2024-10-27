@@ -66,11 +66,6 @@ func handleConnections(c *gin.Context) {
                 countdown--
                 countdownMsg := Message{Text: fmt.Sprintf("Closing in %d seconds", countdown), Event: "server-message"}
                 broadcast <- countdownMsg
-                // err := ws.WriteJSON(countdownMsg)
-                // if err != nil {
-                //     log.Printf("error: %v", err)
-                //     break
-                // }
             }
             log.Printf("Closing connection to client: %v", clientId)
             break
@@ -178,11 +173,22 @@ func handleSSE(c *gin.Context) {
         close(messageChan)
     }()
 
+    ticker := time.NewTicker(1 * time.Second)
+    defer ticker.Stop()
+
+    timer := time.NewTimer(10 * time.Second)
+    defer timer.Stop()
+
     for {
         select {
-        case msg := <-messageChan:
-            fmt.Fprintf(w, "data: %s\n\n", msg)
+        case <-ticker.C:
+            currentTime := time.Now().Format(time.RFC3339)
+            fmt.Fprintf(w, "data: %s\n\n", currentTime)
             flusher.Flush()
+        case <-timer.C:
+            fmt.Fprintf(w, "data: %s\n\n", "Connection closed by server after 10 seconds")
+            flusher.Flush()
+            return
         case <-r.Context().Done():
             return
         }
