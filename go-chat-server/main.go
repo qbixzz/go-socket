@@ -32,6 +32,7 @@ type Message struct {
 func handleConnections(c *gin.Context) {
     w := c.Writer
     r := c.Request
+    w.Header().Set("Connection", "keep-alive")
     clientId := r.URL.Query().Get("clientId")
     if clientId == "" {
         http.Error(w, "Client ID is required", http.StatusBadRequest)
